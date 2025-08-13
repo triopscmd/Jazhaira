@@ -1,26 +1,10 @@
-```typescript
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import InitialSetupScreen from './InitialSetupScreen';
 
-// This import path is intentionally set to fail, as the component
-// 'ProjectConfigurationDisplay.tsx' does not exist yet.
-// It reflects the feature goal of displaying initial project setup and configuration,
-// typically derived from 'package.json'.
-import ProjectConfigurationDisplay from '../src/components/ProjectConfigurationDisplay';
-
-describe('ProjectConfigurationDisplay', () => {
-  it('should render the project name and version from initial setup', () => {
-    // Act
-    // This call will fail because ProjectConfigurationDisplay is not a valid React component
-    // or the file does not exist, fulfilling the "fail initially" requirement.
-    render(<ProjectConfigurationDisplay />);
-
-    // Assert
-    // These assertions expect the component, once implemented, to display key information
-    // like the project name and version, typically found in 'package.json'.
-    // The specific text ('Your Project Name', '1.0.0') are placeholders.
-    // When the component is implemented, these should match actual data or mocked data.
-    expect(screen.getByText('Your Project Name')).toBeInTheDocument();
-    expect(screen.getByText(/version:\s*1\.0\.0/i)).toBeInTheDocument();
+describe('InitialSetupScreen', () => {
+  it('should display a welcoming heading for the initial project setup', () => {
+    render(<InitialSetupScreen />);
+    expect(screen.getByRole('heading', { name: /Welcome to Project Setup/i })).toBeInTheDocument();
   });
 });

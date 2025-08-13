@@ -1,14 +1,100 @@
-generator client {
-  provider = "prisma-client-js"
-}
+```typescript
+import { vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom'; // For extended Jest DOM matchers
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This import path is hypothetical and will cause the test to fail initially
+// because 'UserList' component does not exist and 'prisma/schema.prisma'
+// is not a React component. We assume a React component that displays data
+// modeled in Prisma via tRPC.
+import UserList from './UserList';
 
-model User {
-  id    String @id @default(uuid())
-  name  String
-  email String @unique
-}
+// Mock the tRPC client. This setup assumes a common tRPC client structure
+// where procedures like `user.getAll` are accessed via `trpc.user.getAll.useQuery()`.
+// Adjust the path to 'trpc' utility based on your project structure.
+vi.mock('../utils/trpc', () => ({
+  trpc: {
+    user: {
+      getAll: {
+        useQuery: vi.fn(), // Mock the `useQuery` hook for the `getAll` procedure
+      },
+    },
+  },
+}));
+
+// Import the mocked trpc object to control its return values
+import { trpc } from '../utils/trpc';
+
+describe('UserList Component', () => {
+  // Sample data to be returned by the mocked API call
+  const mockUsers = [
+    { id: '1', name: 'Alice Smith', email: 'alice@example.com' },
+    { id: '2', name: 'Bob Johnson', email: 'bob@example.com' },
+  ];
+
+  beforeEach(() => {
+    // Clear all mocks before each test to ensure isolation
+    vi.clearAllMocks();
+  });
+
+  test('should display a loading state then a list of users fetched from API', async () => {
+    // 1. Mock the tRPC hook to initially return a loading state
+    (trpc.user.getAll.useQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: undefined,
+    });
+
+    render(<UserList />);
+
+    // Assert that the loading state is displayed
+    expect(screen.getByText(/Loading users.../i)).toBeInTheDocument();
+
+    // 2. Update the mock to return data and no longer be loading
+    // This simulates the data fetching completing successfully
+    (trpc.user.getAll.useQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: mockUsers,
+      isLoading: false,
+      isError: false,
+      error: undefined,
+    });
+
+    // Wait for the UI to update from loading to displaying data
+    await waitFor(() => {
+      // Assert that the loading message is no longer present
+      expect(screen.queryByText(/Loading users.../i)).not.toBeInTheDocument();
+      // Assert that the user names are now displayed
+      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+      expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+    });
+
+    // Optionally, assert the number of user items rendered
+    // Assuming each user is rendered as a list item or a distinct card/row
+    const userItems = screen.getAllByRole('listitem'); // Adjust role based on your component's markup
+    expect(userItems).toHaveLength(mockUsers.length);
+  });
+
+  test('should display an error message if data fetching fails', async () => {
+    const errorMessage = 'Failed to retrieve user data.';
+
+    // Mock the tRPC hook to return an error state
+    (trpc.user.getAll.useQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error(errorMessage),
+    });
+
+    render(<UserList />);
+
+    // Wait for the error message to appear in the document
+    await waitFor(() => {
+      expect(screen.getByText(new RegExp(errorMessage, 'i'))).toBeInTheDocument();
+    });
+
+    // Ensure that no user names are displayed when there's an error
+    expect(screen.queryByText('Alice Smith')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bob Johnson')).not.toBeInTheDocument();
+  });
+});

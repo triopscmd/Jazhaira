@@ -1,90 +1,72 @@
-import { render, screen, waitFor } from '@testing-library/react';
+```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
+import { PrismaClient } from '@prisma/client';
 
-// The component we are testing. This import path is hypothetical and
-// assumes a React component named UserList will be created at './UserList.tsx'.
-// As the component does not exist yet, this import will cause a module not found error
-// or a similar import failure, leading to the test failing initially as required.
-import UserList from './UserList';
+// Mock PrismaClient to prevent actual database interactions during testing
+const mockUserCreate = vi.fn();
+const mockPrismaClient = {
+  user: {
+    create: mockUserCreate,
+  },
+  $disconnect: vi.fn(),
+};
 
-// Mock data to simulate the users fetched from the API.
-// This aligns with the 'User' model defined in prisma/schema.prisma.
-const mockUsers = [
-  { id: 'clx0p0t3y00003b1776w4s0p3', name: 'Alice Smith', email: 'alice@example.com' },
-  { id: 'clx0p0t3y00013b1776w4s0p4', name: 'Bob Johnson', email: 'bob@example.com' },
-];
-
-// Mock a hypothetical API hook or service that UserList would use to fetch users.
-// This is crucial for isolating the component's rendering logic from actual API calls.
-vi.mock('../utils/api', () => ({
-  // This mock assumes the component uses a hook named `useUsers`
-  // that returns an object with `data`, `isLoading`, and `error` properties.
-  useUsers: vi.fn(),
+// Mock the @prisma/client module to return our mock instance
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn(() => mockPrismaClient),
 }));
 
-describe('UserList Component', () => {
+// This import will fail initially because the `seedDatabase` function
+// is not yet exported from `prisma/seed.ts`, or the file itself might not exist.
+// Adjust the path '../../prisma/seed' based on your project's exact file structure.
+// Common paths might be '../prisma/seed' or './prisma/seed' depending on test file location.
+import { seedDatabase } from '../../prisma/seed';
+
+describe('Prisma Seed Script Functionality', () => {
   beforeEach(() => {
-    // Clear all mocks before each test to ensure test isolation.
-    vi.clearAllMocks();
+    // Reset all mocks before each test to ensure isolation
+    mockUserCreate.mockClear();
+    mockPrismaClient.$disconnect.mockClear();
+    vi.mocked(PrismaClient).mockClear(); // Clear PrismaClient constructor calls if needed
 
-    // Default mock implementation for the `useUsers` hook: return success with mockUsers.
-    vi.mocked(vi.importActual('../utils/api')).useUsers.mockImplementation(() => ({
-      data: mockUsers,
-      isLoading: false,
-      error: null,
-    }));
-  });
-
-  it('should display a list of users fetched from the API', async () => {
-    // Render the UserList component. This will initially fail because './UserList'
-    // does not exist or does not export a default React component.
-    render(<UserList />);
-
-    // Wait for the component to render and display the user data.
-    // This assumes the data fetching is asynchronous.
-    await waitFor(() => {
-      // Assert that the names and emails of the mock users are present in the document.
-      expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-      expect(screen.getByText('alice@example.com')).toBeInTheDocument();
-      expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
-      expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+    // Default successful mock return for create operation
+    mockUserCreate.mockResolvedValue({
+      id: 'mock-user-id',
+      name: 'Mock User',
+      email: 'mock@example.com',
     });
   });
 
-  it('should display a loading state while fetching users', async () => {
-    // Override the mock to simulate a loading state (data is undefined, isLoading is true).
-    vi.mocked(vi.importActual('../utils/api')).useUsers.mockImplementation(() => ({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    }));
+  it('should attempt to seed initial user data into the database', async () => {
+    await seedDatabase(); // Assuming seedDatabase is the exported function to test
 
-    render(<UserList />);
+    // Verify that PrismaClient was instantiated
+    expect(PrismaClient).toHaveBeenCalledTimes(1);
 
-    // Assert that a loading indicator is displayed.
-    // This will fail if the component does not render "Loading users..." during its loading state.
-    expect(screen.getByText('Loading users...')).toBeInTheDocument();
-  });
-
-  it('should display an error message if fetching users fails', async () => {
-    const errorMessage = 'Failed to load users due to network issue.';
-    // Override the mock to simulate an error state.
-    vi.mocked(vi.importActual('../utils/api')).useUsers.mockImplementation(() => ({
-      data: undefined,
-      isLoading: false,
-      error: new Error(errorMessage),
-    }));
-
-    render(<UserList />);
-
-    // Assert that the error message is displayed.
-    // This will fail if the component does not render the error when `error` is present.
-    await waitFor(() => {
-      expect(screen.getByText(`Error: ${errorMessage}`)).toBeInTheDocument();
+    // Verify that the user.create method was called with the expected data
+    expect(mockUserCreate).toHaveBeenCalledTimes(1);
+    expect(mockUserCreate).toHaveBeenCalledWith({
+      data: {
+        name: 'Test User',
+        email: 'test@example.com',
+      },
     });
 
-    // Ensure no user data is displayed when there's an error.
-    expect(screen.queryByText('Alice Smith')).not.toBeInTheDocument();
+    // Verify that the database connection was disconnected
+    expect(mockPrismaClient.$disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('should disconnect from the database even if seeding fails', async () => {
+    const seedingError = new Error('Failed to create user during seeding');
+    mockUserCreate.mockRejectedValueOnce(seedingError); // Simulate a failure during user creation
+
+    // Expect the function to throw the error
+    await expect(seedDatabase()).rejects.toThrow(seedingError);
+
+    // Verify that user.create was still attempted
+    expect(mockUserCreate).toHaveBeenCalledTimes(1);
+
+    // Verify that $disconnect was called, indicating cleanup even on error
+    expect(mockPrismaClient.$disconnect).toHaveBeenCalledTimes(1);
   });
 });

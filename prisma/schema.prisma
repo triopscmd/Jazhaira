@@ -1,14 +1,18 @@
-generator client {
-  provider = "prisma-client-js"
-}
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import UserDisplay from './UserDisplay'; // This module will not exist yet, causing the test to fail initially.
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+describe('UserDisplay', () => {
+  it('should render the user name and email', () => {
+    const mockUser = {
+      id: 'clx0y9qg90000y1n4q2z2q2z', // Example CUID conforming to Prisma's default
+      name: 'Alice Smith',
+      email: 'alice.smith@example.com',
+    };
 
-model User {
-  id    String @id @default(cuid())
-  name  String
-  email String @unique
-}
+    render(<UserDisplay user={mockUser} />);
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('alice.smith@example.com')).toBeInTheDocument();
+  });
+});

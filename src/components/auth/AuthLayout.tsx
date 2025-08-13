@@ -1,4 +1,3 @@
-```typescript
 import React, { type ReactNode } from 'react';
 
 interface AuthLayoutProps {

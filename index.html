@@ -1,13 +1,18 @@
-```typescript
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import '@testing-library/jest-dom/vitest';
-
-import App from './App';
+import App from '../App'; // The root React component rendered into index.html
 
 describe('Initial Project Setup & Configuration', () => {
-  it('should render the main application welcome message', () => {
+  it('should display the main application title upon successful setup', () => {
+    // This test is designed to FAIL initially because the 'App' component
+    // likely does not exist yet at '../App.tsx', or if it does, it will not
+    // initially render the expected heading text.
     render(<App />);
-    expect(screen.getByRole('heading', { name: /welcome to the app/i })).toBeInTheDocument();
+
+    // Assert that a main heading indicating the application has loaded is present.
+    // This string is specific to ensure the test fails until the App component
+    // is implemented with this exact title.
+    const titleElement = screen.getByRole('heading', { name: /my react app/i });
+
+    expect(titleElement).toBeInTheDocument();
   });
 });

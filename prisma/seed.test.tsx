@@ -1,22 +1,41 @@
 ```typescript
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { PrismaClient } from '@prisma/client';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// This import path is illustrative and assumes the test file is one level up from prisma/.
-// In a real scenario, this file ('prisma/seed.ts') will not export a React component,
-// causing the subsequent render call to fail as expected.
-import SeedStatusDisplay from '../prisma/seed';
+vi.mock('@prisma/client', () => {
+  const mPrismaClient = {
+    user: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+    $disconnect: vi.fn(),
+  };
+  return {
+    PrismaClient: vi.fn(() => mPrismaClient),
+  };
+});
 
-describe('Data Seeding UI Component', () => {
-  it('should display a loading state while initial data is being seeded', () => {
-    // This line is intended to FAIL because 'prisma/seed.ts' is a backend seed script
-    // and does not export a React component that can be rendered by React Testing Library.
-    // The component 'SeedStatusDisplay' does not exist in the specified file.
-    render(<SeedStatusDisplay />);
+const mockPrismaClientInstance = new PrismaClient();
 
-    // This assertion attempts to find UI text related to the feature goal
-    // (Data Modeling & API Infrastructure), specifically a seeding status.
-    // It will not be reached due to the preceding render failure.
-    expect(screen.getByText(/Seeding initial data.../i)).toBeInTheDocument();
+describe('Prisma Seed Script', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should attempt to seed the database with initial user data', async () => {
+    const seedModule = await import('../../../prisma/seed');
+
+    await seedModule.main();
+
+    expect(PrismaClient).toHaveBeenCalledTimes(1);
+    expect(mockPrismaClientInstance.user.create).toHaveBeenCalled();
+    expect(mockPrismaClientInstance.user.create).toHaveBeenCalledWith({
+      data: {
+        name: 'Default Admin',
+        email: 'admin@example.com',
+      },
+    });
+    expect(mockPrismaClientInstance.$disconnect).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,20 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import App from './App'; // This import is expected to fail initially as App.tsx might not exist or be properly configured
+import App from '../src/App'; // This import will cause the test to fail initially as src/App.tsx does not exist.
 
-describe('Initial Project Setup & Configuration', () => {
-  it('should render the basic welcome message to confirm successful setup', () => {
-    // This test assumes a root React component (e.g., App) is responsible for the initial render,
-    // which would typically be mounted into the 'index.html' file.
+describe('App', () => {
+  it('should render the main application container for initial project setup', () => {
     render(<App />);
-
-    // The test expects a specific welcome message to be present in the document.
-    // This assertion will fail if:
-    // 1. The 'App' component cannot be imported (e.g., 'App.tsx' does not exist at the specified path).
-    // 2. The 'App' component exists but does not render the text "Welcome to the App!".
-    //    This signifies that the initial project setup is not yet complete or not configured
-    //    to display the expected foundational message.
-    const welcomeMessage = screen.getByText(/Welcome to the App!/i);
-    expect(welcomeMessage).toBeInTheDocument();
+    expect(screen.getByRole('main')).toBeInTheDocument();
   });
 });

@@ -1,47 +1,15 @@
-```typescript
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { expect, describe, it } from 'vitest';
+import App from '../src/App';
 
-// Placeholder for the main application component.
-// In a real project, this would be imported from '../src/App.tsx' or similar.
-// For the purpose of this test, it's defined here to ensure the test file is
-// syntactically valid TypeScript, while allowing the assertions to fail
-// because the *actual* application content is not yet available or correctly wired up.
-function App() {
-  return null; // Or <></>; ensures nothing is rendered by this placeholder.
-}
-
-describe('Project Setup & index.html Configuration', () => {
-  // This test verifies that the document's title is correctly set as part of the
-  // initial project setup, typically handled by the index.html file.
-  // It will fail initially because the default JSDOM environment in Vitest
-  // does not have this title set.
-  it('should have the correct document title for the project', () => {
-    expect(document.title).toBe('My React App');
-  });
-
-  // This test verifies the presence of the essential root element in the DOM,
-  // where the React application is expected to mount. This element is typically
-  // defined within the index.html file.
-  // It will fail initially because the default JSDOM environment does not
-  // contain a div with id="root".
-  it('should have a root div for the React application to mount into', () => {
-    expect(document.getElementById('root')).toBeInTheDocument();
-  });
-
-  // This test verifies that upon the initial setup and application render,
-  // a key piece of content (a main heading) is displayed. This signifies
-  // that the React application has successfully started and rendered.
-  // It will fail initially because the placeholder `App` component renders `null`,
-  // meaning the expected heading will not be present in the DOM.
-  it('should display a main heading indicating successful application rendering', () => {
-    // Render the placeholder App component. In a fully set up project, this would
-    // be the actual main application component that renders initial UI.
+describe('Initial Project Setup & Configuration', () => {
+  it('should render the main application with a welcome heading', () => {
     render(<App />);
+    const welcomeHeading = screen.getByRole('heading', { name: /Welcome to My React App/i });
+    expect(welcomeHeading).toBeInTheDocument();
+  });
 
-    // Assert that a heading with specific text is present in the document.
-    // This expectation assumes the main application component will render such a heading.
-    expect(screen.getByRole('heading', { name: /welcome to react project/i }))
-      .toBeInTheDocument();
+  it('should set the document title correctly', () => {
+    expect(document.title).toBe('My React Application');
   });
 });

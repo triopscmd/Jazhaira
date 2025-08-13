@@ -1,18 +1,11 @@
-```typescript
-import { describe, expect, test } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-
-// This import will initially fail if src/server/db.ts does not exist
-// or does not export a 'prisma' instance, satisfying the "fail initially" requirement.
-import { prisma } from './db';
+import { expect, describe, it } from 'vitest';
+import { prisma } from '../db';
 
 describe('Database Client Initialization', () => {
-  test('should export a PrismaClient instance', () => {
+  it('should initialize and export the Prisma client', () => {
     expect(prisma).toBeDefined();
-    expect(prisma).toBeInstanceOf(PrismaClient);
+    expect(typeof prisma).toBe('object');
+    expect(prisma.user).toBeDefined();
+    expect(typeof prisma.user.findUnique).toBe('function');
   });
-
-  // Additional tests could include checks for singleton pattern or connection status
-  // once the implementation is in place, but for an initial failing test,
-  // verifying the instance type is sufficient.
 });

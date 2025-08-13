@@ -1,23 +1,22 @@
 ```typescript
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import '@testing-library/jest-dom';
 
-// This import is designed to fail initially.
-// 'index.html' is not a valid TypeScript/JSX module that exports a React component.
-// Attempting to import it as such will result in a module resolution error or syntax error,
-// fulfilling the requirement that the test "FAIL initially, as the component does not exist yet."
-import InitialProjectRoot from '../../index.html';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: This import is expected to FAIL initially, as the 'App' component file does not exist yet.
+// It represents the main application component that `index.html` would eventually load and render.
+import App from './App';
 
-describe('Initial Project Setup & Configuration', () => {
-  it('should ensure the main application structure is ready for rendering', () => {
-    // This line will cause a runtime error if the import above did not already break the build.
-    // It attempts to render a non-React component, which React Testing Library cannot handle.
-    render(<InitialProjectRoot />);
+describe('Application Initial Setup & Configuration', () => {
+  it('should render the main application component for initial project setup', () => {
+    // This render call will throw an error because 'App' is undefined/unresolved due to the failed import,
+    // satisfying the requirement for the test to FAIL initially as the component does not exist.
+    render(<App />);
 
-    // This assertion represents a basic expected outcome for an initial project setup,
-    // like a main heading for the application. This checks the "core functionality".
-    // This line would only be reached if the problematic import and render somehow succeeded,
-    // which they won't, thus ensuring the test fails as required.
-    expect(screen.getByRole('heading', { name: /Welcome to the Application!/i })).toBeInTheDocument();
+    // Once the 'App' component is created (e.g., in src/App.tsx) and renders a main heading,
+    // this assertion will verify the core functionality of the initial setup.
+    // For example, if 'App' renders `<h1>Welcome to My App</h1>`
+    expect(screen.getByRole('heading', { level: 1, name: /welcome to my app/i })).toBeInTheDocument();
   });
 });

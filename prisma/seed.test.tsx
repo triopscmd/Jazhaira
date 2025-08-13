@@ -1,24 +1,58 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import SeedComponent from './seed'; // Assuming seed.ts will be refactored into a React component
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PrismaClient } from '@prisma/client';
 
-describe('Initial Users Display Component', () => {
-  it('should display a list of initial users from the seeded data', () => {
-    // This test assumes 'prisma/seed.ts' will be a React component responsible
-    // for displaying data populated by the seeding process.
-    render(<SeedComponent />);
+// Mock the PrismaClient to prevent actual database interactions during testing.
+const mockUserCreateMany = vi.fn();
+const mockUserDeleteMany = vi.fn();
+const mockDisconnect = vi.fn();
 
-    // Verify the presence of a title or heading related to initial users
-    expect(screen.getByRole('heading', { name: /initial users/i })).toBeInTheDocument();
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn(() => ({
+    user: {
+      createMany: mockUserCreateMany,
+      deleteMany: mockUserDeleteMany,
+    },
+    $disconnect: mockDisconnect,
+  })),
+}));
 
-    // Verify specific seeded users are displayed
-    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+// Import the seed script. This import will cause the test to fail initially
+// if 'prisma/seed.ts' does not exist or does not export a 'seed' function.
+// It assumes that the seeding logic is encapsulated in an exported 'seed' function.
+import { seed } from './seed';
 
-    expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
-    expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+describe('Prisma Seed Script', () => {
+  beforeEach(() => {
+    // Reset all mock functions before each test to ensure isolation.
+    mockUserCreateMany.mockClear();
+    mockUserDeleteMany.mockClear();
+    mockDisconnect.mockClear();
+    // Re-instantiate PrismaClient mock if necessary, though the module mock handles it here.
+    vi.mocked(PrismaClient).mockClear();
+  });
 
-    expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
-    expect(screen.getByText('charlie@example.com')).toBeInTheDocument();
+  it('should seed the database with initial user data', async () => {
+    // Execute the seed function.
+    await seed();
+
+    // Verify that PrismaClient was instantiated.
+    expect(PrismaClient).toHaveBeenCalledTimes(1);
+
+    // Verify that existing user data was potentially cleared (common for idempotent seeding).
+    expect(mockUserDeleteMany).toHaveBeenCalledTimes(1);
+    expect(mockUserDeleteMany).toHaveBeenCalledWith({});
+
+    // Verify that new user data was created.
+    expect(mockUserCreateMany).toHaveBeenCalledTimes(1);
+    expect(mockUserCreateMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ name: 'Alice', email: 'alice@example.com' }),
+        expect.objectContaining({ name: 'Bob', email: 'bob@example.com' }),
+      ]),
+    });
+
+    // Verify that the Prisma client connection was properly disconnected.
+    expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
 });

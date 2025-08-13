@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
-import { prisma } from '~/server/db'; // Assuming prisma is exported from src/server/db
+import { prisma } from '../db';
 
 interface User {
   id: string;
   name: string;
-  email: string; // Added email to match Prisma schema and test expectation
+  email: string;
 }
 
 interface AuthContextType {
@@ -55,26 +55,20 @@ const useAuth = () => {
   return context;
 };
 
-/**
- * Registers a new user in the database.
- * This is a server-side utility function.
- * @param name The name of the user.
- * @param email The email of the user.
- * @returns The newly created user object.
- */
-export async function registerNewUser(name: string, email: string): Promise<User> {
+async function registerNewUser(name: string, email: string): Promise<User> {
   const newUser = await prisma.user.create({
     data: {
       name,
-      email,
+      TSEmail: email,
     },
     select: {
       id: true,
       name: true,
-      email: true,
+      TSEmail: true,
     },
   });
+
   return newUser;
 }
 
-export { AuthProvider, useAuth };
+export { AuthProvider, useAuth, registerNewUser };

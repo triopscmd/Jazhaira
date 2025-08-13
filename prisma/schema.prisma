@@ -1,0 +1,118 @@
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import UserList from './UserList'; // This import will fail initially as UserList.tsx does not exist.
+
+// Mock the tRPC client to control data returned by its hooks
+const mockUserList = [
+  { id: '1', name: 'Alice Smith', email: 'alice@example.com' },
+  { id: '2', name: 'Bob Johnson', email: 'bob@example.com' },
+  { id: '3', name: 'Charlie Brown', email: 'charlie@example.com' },
+];
+
+// This mocks the typical structure of a tRPC client for a React application.
+// Assumes `trpc.user.list.useQuery()` will be used by the component.
+const mockTrpc = {
+  user: {
+    list: {
+      useQuery: vi.fn(), // Mock the specific useQuery hook
+    },
+  },
+};
+
+// Mock the tRPC utility import path
+vi.mock('../utils/trpc', () => ({
+  trpc: mockTrpc,
+}));
+
+describe('UserList Component', () => {
+  beforeEach(() => {
+    // Clear all mocks before each test to ensure isolation
+    vi.clearAllMocks();
+    // Default mock implementation: successful data fetch with predefined users
+    mockTrpc.user.list.useQuery.mockReturnValue({
+      data: mockUserList,
+      isLoading: false,
+      isError: false,
+      error: null,
+      isSuccess: true,
+    });
+  });
+
+  it('should display a list of users fetched from the API when data is available', async () => {
+    // This render call will fail initially because UserList.tsx does not exist,
+    // causing an import error, or if UserList does not properly consume the tRPC mock.
+    render(<UserList />);
+
+    // Ensure loading state is not displayed when data is mocked as already loaded
+    expect(screen.queryByText(/loading users.../i)).not.toBeInTheDocument();
+
+    // Assert that the component renders the fetched user data
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /users/i })).toBeInTheDocument();
+      expect(screen.getByText('Alice Smith (alice@example.com)')).toBeInTheDocument();
+      expect(screen.getByText('Bob Johnson (bob@example.com)')).toBeInTheDocument();
+      expect(screen.getByText('Charlie Brown (charlie@example.com)')).toBeInTheDocument();
+    });
+
+    // Verify the correct number of user items are rendered
+    const userItems = screen.getAllByRole('listitem');
+    expect(userItems).toHaveLength(mockUserList.length);
+  });
+
+  it('should display a loading indicator when user data is being fetched', () => {
+    // Configure the mock to simulate a loading state
+    mockTrpc.user.list.useQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+      isSuccess: false,
+    });
+
+    render(<UserList />);
+
+    // Assert that the loading message is displayed
+    expect(screen.getByText(/loading users.../i)).toBeInTheDocument();
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+  });
+
+  it('should display a message when no users are found', async () => {
+    // Configure the mock to return an empty array for no users
+    mockTrpc.user.list.useQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      isSuccess: true,
+    });
+
+    render(<UserList />);
+
+    // Assert that the "No users found" message is displayed
+    await waitFor(() => {
+      expect(screen.getByText(/no users found./i)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+  });
+
+  it('should display an error message if the API call fails', async () => {
+    const errorMessage = 'Failed to retrieve user data.';
+    // Configure the mock to simulate an error state
+    mockTrpc.user.list.useQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error(errorMessage),
+      isSuccess: false,
+    });
+
+    render(<UserList />);
+
+    // Assert that the error message is displayed
+    await waitFor(() => {
+      expect(screen.getByText(`Error: ${errorMessage}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+  });
+});

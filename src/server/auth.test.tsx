@@ -1,20 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { registerNewUser } from '../src/server/auth'; // This import will cause the test to fail initially.
+import { getAuthenticatedUser } from '../auth';
 
-describe('Authentication Service (auth.ts)', () => {
-  it('should successfully register a new user with valid details', async () => {
-    const newUserDetails = {
-      name: 'Alice Smith',
-      email: 'alice.smith@example.com',
-    };
+describe('Authentication & Authorization Service', () => {
+  it('should retrieve an authenticated user by their ID', async () => {
+    const existingUserId = 'clx123abcde';
+    const expectedUserEmail = 'authenticated.user@example.com';
+    const expectedUserName = 'Authenticated User';
 
-    // This call will fail because 'registerNewUser' is not yet implemented in 'src/server/auth.ts'.
-    const registeredUser = await registerNewUser(newUserDetails.name, newUserDetails.email);
+    const user = await getAuthenticatedUser(existingUserId);
 
-    // These assertions define the expected behavior once 'registerNewUser' is implemented.
-    expect(registeredUser).toBeDefined();
-    expect(registeredUser.name).toBe(newUserDetails.name);
-    expect(registeredUser.email).toBe(newUserDetails.email);
-    expect(registeredUser).toHaveProperty('id');
+    expect(user).toBeDefined();
+    expect(user?.id).toBe(existingUserId);
+    expect(user?.email).toBe(expectedUserEmail);
+    expect(user?.name).toBe(expectedUserName);
+  });
+
+  it('should return null if the user ID does not exist', async () => {
+    const nonExistentUserId = 'clx999xyzab';
+
+    const user = await getAuthenticatedUser(nonExistentUserId);
+
+    expect(user).toBeNull();
   });
 });

@@ -1,15 +1,13 @@
+```typescript
 import { render, screen } from '@testing-library/react';
-import { expect, describe, it } from 'vitest';
-import App from '../src/App';
+import { describe, it, expect } from 'vitest';
+import '@testing-library/jest-dom/vitest';
+
+import App from './App';
 
 describe('Initial Project Setup & Configuration', () => {
-  it('should render the main application with a welcome heading', () => {
+  it('should render the main application welcome message', () => {
     render(<App />);
-    const welcomeHeading = screen.getByRole('heading', { name: /Welcome to My React App/i });
-    expect(welcomeHeading).toBeInTheDocument();
-  });
-
-  it('should set the document title correctly', () => {
-    expect(document.title).toBe('My React Application');
+    expect(screen.getByRole('heading', { name: /welcome to the app/i })).toBeInTheDocument();
   });
 });

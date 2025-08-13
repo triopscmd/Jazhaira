@@ -1,35 +1,52 @@
-import { describe, it, expect } from 'vitest';
-import { authRouter } from 'src/server/api/routers/auth.router'; // This import is expected to fail initially if the file doesn't exist or doesn't export `authRouter`
+```typescript
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import AuthPage from '../../src/components/auth/AuthPage'; // This import path will cause the initial test failure as the component does not exist.
 
-describe('Auth Router', () => {
-  it('should allow a new user to register with valid credentials', async () => {
-    // This test is designed to fail initially because `authRouter` or its `signup` procedure
-    // will likely not be implemented or correctly exported from the target file.
+// Mock the tRPC client hook for authentication, assuming a structure like '~/utils/api'
+// This mock is set up to simulate a successful API call for sign-in.
+vi.mock('~/utils/api', () => ({
+  api: {
+    auth: {
+      signIn: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn((_credentials, { onSuccess }) => {
+            // Simulate successful API call response
+            onSuccess({ user: { id: 'test-user-id', name: 'Test User', email: 'test@example.com' } });
+          }),
+          isLoading: false,
+          isSuccess: false,
+          isError: false,
+        })),
+      },
+    },
+  },
+}));
 
-    // Mock input for a new user registration.
-    const newUserInput = {
-      name: 'Test User',
-      email: 'test.user@example.com',
-      password: 'SecurePassword123!', // Assuming a password field for registration
-    };
+describe('AuthPage', () => {
+  it('should allow a user to log in successfully with valid credentials and display a welcome message', async () => {
+    // Render the (non-existent) AuthPage component.
+    // This line will throw an error initially because `AuthPage` cannot be resolved.
+    render(<AuthPage />);
 
-    // In a real scenario, we would mock Prisma client or other dependencies
-    // that `authRouter` might use internally. For a failing test, this is not critical.
+    // Get input fields by their accessible names (labels) and the submit button by role.
+    const emailInput = screen.getByRole('textbox', { name: /email/i });
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /log in/i });
 
-    // Attempt to call a registration procedure on the router.
-    // This line is expected to throw an error (e.g., TypeError: authRouter.signup is not a function)
-    // if the router or the procedure is not yet implemented.
-    const result = await authRouter.signup(newUserInput);
+    // Simulate user typing into the email and password fields.
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
 
-    // This expectation asserts the desired outcome upon successful registration.
-    // It will not be reached if the above call fails as expected.
-    expect(result).toEqual(expect.objectContaining({
-      success: true,
-      message: 'User registered successfully',
-      user: expect.objectContaining({
-        email: newUserInput.email,
-        name: newUserInput.name,
-      }),
-    }));
+    // Simulate user clicking the login button.
+    fireEvent.click(loginButton);
+
+    // Wait for the UI to update based on the (mocked) successful login.
+    // This assertion expects a success feedback, such as a welcome message, to appear.
+    // This expectation will fail initially because the AuthPage component does not exist
+    // and therefore will not render any text.
+    await waitFor(() => {
+      expect(screen.getByText(/welcome, test user!/i)).toBeInTheDocument();
+    });
   });
 });

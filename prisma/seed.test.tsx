@@ -1,41 +1,24 @@
-```typescript
-import { PrismaClient } from '@prisma/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import SeedComponent from './seed'; // Assuming seed.ts will be refactored into a React component
 
-vi.mock('@prisma/client', () => {
-  const mPrismaClient = {
-    user: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      upsert: vi.fn(),
-    },
-    $disconnect: vi.fn(),
-  };
-  return {
-    PrismaClient: vi.fn(() => mPrismaClient),
-  };
-});
+describe('Initial Users Display Component', () => {
+  it('should display a list of initial users from the seeded data', () => {
+    // This test assumes 'prisma/seed.ts' will be a React component responsible
+    // for displaying data populated by the seeding process.
+    render(<SeedComponent />);
 
-const mockPrismaClientInstance = new PrismaClient();
+    // Verify the presence of a title or heading related to initial users
+    expect(screen.getByRole('heading', { name: /initial users/i })).toBeInTheDocument();
 
-describe('Prisma Seed Script', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    // Verify specific seeded users are displayed
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
 
-  it('should attempt to seed the database with initial user data', async () => {
-    const seedModule = await import('../../../prisma/seed');
+    expect(screen.getByText('Bob Johnson')).toBeInTheDocument();
+    expect(screen.getByText('bob@example.com')).toBeInTheDocument();
 
-    await seedModule.main();
-
-    expect(PrismaClient).toHaveBeenCalledTimes(1);
-    expect(mockPrismaClientInstance.user.create).toHaveBeenCalled();
-    expect(mockPrismaClientInstance.user.create).toHaveBeenCalledWith({
-      data: {
-        name: 'Default Admin',
-        email: 'admin@example.com',
-      },
-    });
-    expect(mockPrismaClientInstance.$disconnect).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
+    expect(screen.getByText('charlie@example.com')).toBeInTheDocument();
   });
 });

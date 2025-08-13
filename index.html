@@ -1,26 +1,20 @@
-```typescript
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import App from './App'; // This import is expected to fail initially as App.tsx might not exist or be properly configured
 
 describe('Initial Project Setup & Configuration', () => {
-  it('should ensure the main application root element is present', () => {
-    // This test verifies that the fundamental HTML structure for a React application
-    // is present in the DOM. In a typical React setup, this involves a root element
-    // (e.g., <div id="root">) where the application component will be mounted.
-    //
-    // By default, Vitest's JSDOM environment starts with an empty document.
-    // For this test to pass in a real scenario, the content of 'index.html' (or
-    // at least the expected root element) would need to be loaded into the JSDOM.
-    // Since the project is in its initial setup phase and 'index.html' is not
-    // explicitly loaded into the testing environment's DOM, this test will
-    // correctly fail initially because the element will not be found.
-    //
-    // Once the actual 'index.html' file is configured with the root element
-    // and potentially loaded into the test environment (e.g., via a global setup
-    // or by manually setting innerHTML for the document body), this test will pass.
+  it('should render the basic welcome message to confirm successful setup', () => {
+    // This test assumes a root React component (e.g., App) is responsible for the initial render,
+    // which would typically be mounted into the 'index.html' file.
+    render(<App />);
 
-    const appRootElement = screen.getByTestId('app-root');
-
-    expect(appRootElement).toBeInTheDocument();
+    // The test expects a specific welcome message to be present in the document.
+    // This assertion will fail if:
+    // 1. The 'App' component cannot be imported (e.g., 'App.tsx' does not exist at the specified path).
+    // 2. The 'App' component exists but does not render the text "Welcome to the App!".
+    //    This signifies that the initial project setup is not yet complete or not configured
+    //    to display the expected foundational message.
+    const welcomeMessage = screen.getByText(/Welcome to the App!/i);
+    expect(welcomeMessage).toBeInTheDocument();
   });
 });

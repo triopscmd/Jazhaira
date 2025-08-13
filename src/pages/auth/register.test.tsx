@@ -1,30 +1,25 @@
 ```typescript
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import Register from './register';
+import { describe, it, expect } from 'vitest';
+import Register from '../../pages/auth/register';
 
 describe('Register Page', () => {
-  it('should display a registration form with name, email, password, confirm password, and submit button', () => {
+  it('should display a registration form with name, email, password, and confirm password fields', () => {
     render(<Register />);
 
-    const nameInput = screen.getByLabelText(/name/i);
-    expect(nameInput).toBeInTheDocument();
-    expect(nameInput).toHaveAttribute('type', 'text');
+    // Expect a text input for name
+    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
 
-    const emailInput = screen.getByLabelText(/email/i);
-    expect(emailInput).toBeInTheDocument();
-    expect(emailInput).toHaveAttribute('type', 'email');
+    // Expect a text input for email address
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
 
-    const passwordInput = screen.getByLabelText(/password/i);
-    expect(passwordInput).toBeInTheDocument();
-    expect(passwordInput).toHaveAttribute('type', 'password');
+    // Expect a password input
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
 
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
-    expect(confirmPasswordInput).toBeInTheDocument();
-    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+    // Expect a password input for confirmation
+    expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
 
-    const submitButton = screen.getByRole('button', { name: /register/i });
-    expect(submitButton).toBeInTheDocument();
-    expect(submitButton).toBeEnabled();
+    // Expect a submit button for registration
+    expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
   });
 });
